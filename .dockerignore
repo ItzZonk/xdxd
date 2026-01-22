@@ -1,0 +1,16 @@
+# flyctl launch added from .gitignore
+**/.env
+**/__pycache__
+**/*.pyc
+**/*.pyo
+# *.db  <-- Removed to allow database upload
+**/school_bot.db-wal
+**/school_bot.db-shm
+**/.venv
+**/venv
+**/*.egg-info
+**/dist
+**/build
+**/.idea
+**/.vscode
+fly.toml

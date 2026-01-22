@@ -24,13 +24,16 @@ async def main():
     
     dp.update.middleware(DbSessionMiddleware(session_pool=AsyncSessionLocal))
     
-    from bot.handlers import start, schedule, teachers, cabinet, stats
+    from bot.handlers import start, schedule, teachers, cabinet, stats, dashboard
+    from bot.handlers import settings as settings_handler
     
     dp.include_router(start.router)
     dp.include_router(schedule.router)
     dp.include_router(teachers.router)
     dp.include_router(cabinet.router)
+    dp.include_router(dashboard.router)
     dp.include_router(stats.router)
+    dp.include_router(settings_handler.router)
     
     logger.info("Initializing database...")
     await init_db()

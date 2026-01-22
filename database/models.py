@@ -1,5 +1,5 @@
 from typing import Optional
-from sqlalchemy import BigInteger, String, Integer, Time, Boolean, ForeignKey, Index, DateTime
+from sqlalchemy import BigInteger, String, Integer, Time, Boolean, ForeignKey, Index, DateTime, JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.ext.asyncio import AsyncAttrs
 
@@ -48,6 +48,11 @@ class User(Base):
     
     selected_class: Mapped[Optional["Class"]] = relationship(back_populates="users")
     selected_teacher: Mapped[Optional["Teacher"]] = relationship()
+    
+    # New fields
+    settings: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    timezone_offset: Mapped[int] = mapped_column(Integer, default=0)
+    gamification_stats: Mapped[Optional["GamificationStats"]] = relationship(back_populates="user", uselist=False, cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<User(id={self.telegram_id}, role={self.role})>"
@@ -108,3 +113,42 @@ class SystemMeta(Base):
     key: Mapped[str] = mapped_column(String, primary_key=True)
     value: Mapped[str] = mapped_column(String)
     updated_at: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+
+class Subject(Base):
+    __tablename__ = "subjects"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String, unique=True, index=True)
+    color_hex: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+    def __repr__(self) -> str:
+        return f"<Subject(name='{self.name}', color='{self.color_hex}')>"
+
+
+class GamificationStats(Base):
+    __tablename__ = "gamification_stats"
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.telegram_id"), primary_key=True)
+    streak_days: Mapped[int] = mapped_column(Integer, default=0)
+    last_checkin: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    xp: Mapped[int] = mapped_column(Integer, default=0)
+    level: Mapped[int] = mapped_column(Integer, default=1)
+
+    user: Mapped["User"] = relationship(back_populates="gamification_stats")
+
+    def __repr__(self) -> str:
+        return f"<GamificationStats(user={self.user_id}, lvl={self.level})>"
+
+
+class AttendanceLog(Base):
+    __tablename__ = "attendance_log"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.telegram_id"), index=True)
+    timestamp: Mapped[str] = mapped_column(String, nullable=False)
+    
+    user: Mapped["User"] = relationship()
+
+    def __repr__(self) -> str:
+        return f"<AttendanceLog(user={self.user_id}, time={self.timestamp})>"
