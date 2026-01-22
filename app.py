@@ -2,6 +2,7 @@ import asyncio
 import logging
 import sys
 import os
+import aiohttp
 from aiohttp import web
 
 # Ensure the current directory is in the path
@@ -23,9 +24,33 @@ async def start_web_server():
     await site.start()
     logging.info(f"Web server started on port {port}")
 
+async def keep_alive_loop():
+    """Pings the bot's own URL every 14 minutes to prevent sleep."""
+    external_url = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+    if not external_url:
+        logging.warning("RENDER_EXTERNAL_HOSTNAME not found, keep-alive loop disabled")
+        return
+
+    url = f"https://{external_url}/health"
+    logging.info(f"Starting keep-alive loop for {url}")
+    
+    async with aiohttp.ClientSession() as session:
+        while True:
+            try:
+                await asyncio.sleep(14 * 60) # 14 minutes
+                async with session.get(url) as response:
+                    logging.info(f"Keep-alive ping status: {response.status}")
+            except Exception as e:
+                logging.error(f"Keep-alive ping failed: {e}")
+            
+
 async def run_app():
     # Start web server for Render (to satisfy port binding requirement)
     await start_web_server()
+    
+    # Start keep-alive loop in background
+    asyncio.create_task(keep_alive_loop())
+    
     # Start the bot
     await main()
 
