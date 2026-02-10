@@ -7,6 +7,7 @@ from aiogram import Router, F, types
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.fsm.context import FSMContext
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.keyboards import classes_in_grade_kb, schedule_controls_kb, main_menu_kb
@@ -14,6 +15,28 @@ from bot.states import UserStates
 from database.models import Class, User, Schedule
 
 router = Router()
+
+@router.callback_query(F.data == "select_grade")
+async def back_to_class_selection(callback: types.CallbackQuery, session: AsyncSession):
+    # This acts as "Back to Classes"
+    user_id = callback.from_user.id
+    stmt = select(User).where(User.telegram_id == user_id).options(selectinload(User.selected_class))
+    result = await session.execute(stmt)
+    user = result.scalar_one_or_none()
+    
+    current_grade = 1
+    if user and user.selected_class:
+        current_grade = user.selected_class.grade_level
+    
+    # Determine grade range based on current grade
+    if 1 <= current_grade <= 4:
+        min_g, max_g = 1, 4
+    elif 5 <= current_grade <= 9:
+        min_g, max_g = 5, 9
+    else:
+        min_g, max_g = 10, 11
+        
+    await render_grade_view(callback, session, current_grade, min_g, max_g)
 
 @router.callback_query(F.data == "main_menu")
 async def show_main_menu(callback: types.CallbackQuery):
@@ -126,11 +149,6 @@ async def navigate_schedule(callback: types.CallbackQuery, state: FSMContext, se
             return
 
     await render_schedule(callback.message, session, target_id, target_date, user.notification_enabled if user else False, mode=view_mode)
-
-from aiogram.fsm.context import FSMContext
-from sqlalchemy import select, and_
-from sqlalchemy.orm import selectinload
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.keyboards import classes_in_grade_kb, schedule_controls_kb
 
