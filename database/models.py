@@ -1,5 +1,6 @@
 from typing import Optional
-from sqlalchemy import BigInteger, String, Integer, Time, Boolean, ForeignKey, Index
+from datetime import datetime
+from sqlalchemy import BigInteger, String, Integer, Time, Boolean, ForeignKey, Index, DateTime
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.ext.asyncio import AsyncAttrs
 
@@ -44,6 +45,7 @@ class User(Base):
     class_id: Mapped[Optional[int]] = mapped_column(ForeignKey("classes.id"), nullable=True)
     teacher_id: Mapped[Optional[int]] = mapped_column(ForeignKey("teachers.id"), nullable=True)
     notification_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    last_active: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     
     selected_class: Mapped[Optional["Class"]] = relationship(back_populates="users")
     selected_teacher: Mapped[Optional["Teacher"]] = relationship()
